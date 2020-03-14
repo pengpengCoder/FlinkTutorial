@@ -19,6 +19,7 @@ object StreamWordCount {
     // 1. 创建流处理执行环境
     val env: StreamExecutionEnvironment = StreamExecutionEnvironment.getExecutionEnvironment
 //    env.setParallelism(1)
+//    env.disableOperatorChaining()
     // 2. 从 socket 文本流中读取数据
     val params: ParameterTool = ParameterTool.fromArgs(args)
     val host: String = params.get("host")
@@ -27,7 +28,7 @@ object StreamWordCount {
     // 3. 对数据进行处理，计算word count
     val resultStream: DataStream[(String, Int)] = inputStream
       .flatMap( _.split(" ") )
-      .filter( _.nonEmpty )
+      .filter( _.nonEmpty ).startNewChain()
       .map( (_, 1) )
       .keyBy(0)     // 指定以二元组中第一个元素，也就是word作为key，然后按照key分组
       .sum(1)
