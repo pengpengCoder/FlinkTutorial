@@ -1,8 +1,11 @@
 package com.atguigu.apitest
 
+import java.util
+
 import org.apache.flink.api.common.state.{ValueState, ValueStateDescriptor}
 import org.apache.flink.api.java.tuple.Tuple
-import org.apache.flink.streaming.api.functions.KeyedProcessFunction
+import org.apache.flink.streaming.api.checkpoint.ListCheckpointed
+import org.apache.flink.streaming.api.functions.{KeyedProcessFunction, ProcessFunction}
 import org.apache.flink.streaming.api.scala._
 import org.apache.flink.util.Collector
 
