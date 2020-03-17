@@ -1,6 +1,7 @@
 package com.atguigu.apitest
 
 import org.apache.flink.api.common.state.{ValueState, ValueStateDescriptor}
+import org.apache.flink.api.java.tuple.Tuple
 import org.apache.flink.streaming.api.functions.KeyedProcessFunction
 import org.apache.flink.streaming.api.scala._
 import org.apache.flink.util.Collector
@@ -29,7 +30,7 @@ object ProcessFuntionTest {
       })
 
     val warningStream = dataStream
-      .keyBy(_.id)
+      .keyBy("id")
       .process( new TempIncreWarning(5000L) )
 
     warningStream.print()
@@ -38,13 +39,13 @@ object ProcessFuntionTest {
 }
 
 // 自定义 Process Function，用来定义定时器，检测温度连续上升
-class TempIncreWarning(interval: Long) extends KeyedProcessFunction[String, SensorReading, String]{
+class TempIncreWarning(interval: Long) extends KeyedProcessFunction[Tuple, SensorReading, String]{
   // 把上一次的温度值，保存成状态
   lazy val lastTempState: ValueState[Double] = getRuntimeContext.getState(new ValueStateDescriptor[Double]("last-temp", classOf[Double]))
   // 把注册的定时器时间戳保存成状态，方便删除
   lazy val curTimerState: ValueState[Long] = getRuntimeContext.getState(new ValueStateDescriptor[Long]("cur-timer", classOf[Long]))
 
-  override def processElement(value: SensorReading, ctx: KeyedProcessFunction[String, SensorReading, String]#Context, out: Collector[String]): Unit = {
+  override def processElement(value: SensorReading, ctx: KeyedProcessFunction[Tuple, SensorReading, String]#Context, out: Collector[String]): Unit = {
     // 先把状态取出来
     val lastTemp = lastTempState.value()
     val curTimerTs = curTimerState.value()
@@ -65,7 +66,7 @@ class TempIncreWarning(interval: Long) extends KeyedProcessFunction[String, Sens
     }
   }
 
-  override def onTimer(timestamp: Long, ctx: KeyedProcessFunction[String, SensorReading, String]#OnTimerContext, out: Collector[String]): Unit = {
+  override def onTimer(timestamp: Long, ctx: KeyedProcessFunction[Tuple, SensorReading, String]#OnTimerContext, out: Collector[String]): Unit = {
     // 定时器触发，报警
     out.collect("传感器"+ ctx.getCurrentKey + "温度连续5秒上升")
     // timer状态清空

@@ -25,7 +25,7 @@ import org.apache.flink.util.Collector
 object WindowTest {
   def main(args: Array[String]): Unit = {
     val env = StreamExecutionEnvironment.getExecutionEnvironment
-    env.setParallelism(1)
+    env.setParallelism(2)
     env.setStreamTimeCharacteristic(TimeCharacteristic.EventTime)
     env.getConfig.setAutoWatermarkInterval(300L)
 
@@ -64,7 +64,8 @@ object WindowTest {
     val minTempPerWinStream: DataStream[(String, Double)] = dataStream
       .map( data => (data.id, data.temperature) )
       .keyBy(_._1)    // 按照sensor id分组
-      .timeWindow(Time.seconds(15))    // 15秒的滚动窗口
+//      .timeWindow(Time.seconds(15))    // 15秒的滚动窗口
+      .timeWindow(Time.seconds(15), Time.seconds(5))    // 15秒的滑动窗口，滑动步长5秒
 //      .reduce( (curMin, newData) => (curMin._1, curMin._2.min(newData._2)) )
       .reduce( new MyReduceFunction() )
 
