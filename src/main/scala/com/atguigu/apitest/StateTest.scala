@@ -1,11 +1,16 @@
 package com.atguigu.apitest
 
+import java.util.concurrent.TimeUnit
+
 import org.apache.flink.api.common.functions.RichFlatMapFunction
+import org.apache.flink.api.common.restartstrategy.RestartStrategies
 import org.apache.flink.api.common.state.{ValueState, ValueStateDescriptor}
+import org.apache.flink.api.common.time.Time
 import org.apache.flink.configuration.Configuration
 import org.apache.flink.contrib.streaming.state.RocksDBStateBackend
 import org.apache.flink.runtime.state.filesystem.FsStateBackend
 import org.apache.flink.runtime.state.memory.MemoryStateBackend
+import org.apache.flink.streaming.api.CheckpointingMode
 import org.apache.flink.streaming.api.scala._
 import org.apache.flink.util.Collector
 
@@ -22,8 +27,22 @@ object StateTest {
   def main(args: Array[String]): Unit = {
     val env = StreamExecutionEnvironment.getExecutionEnvironment
     env.setParallelism(1)
+    // 状态后端配置
 //    env.setStateBackend(new FsStateBackend(""))
 //    env.setStateBackend( new RocksDBStateBackend("") )
+
+    // checkpoint配置
+    env.enableCheckpointing(10000L)
+    env.getCheckpointConfig.setCheckpointingMode(CheckpointingMode.EXACTLY_ONCE)
+    env.getCheckpointConfig.setCheckpointTimeout(20000L)
+//    env.getCheckpointConfig.setMaxConcurrentCheckpoints(2)
+    env.getCheckpointConfig.setMinPauseBetweenCheckpoints(500L)
+    env.getCheckpointConfig.setPreferCheckpointForRecovery(true)
+    env.getCheckpointConfig.setTolerableCheckpointFailureNumber(3)
+
+    // 重启策略的配置
+    env.setRestartStrategy(RestartStrategies.fixedDelayRestart(3, 10000L))
+//    env.setRestartStrategy(RestartStrategies.failureRateRestart(5, Time.of(5, TimeUnit.MINUTES), Time.of(10, TimeUnit.SECONDS)))
 
     val inputStream: DataStream[String] = env.socketTextStream("localhost", 7777)
 
